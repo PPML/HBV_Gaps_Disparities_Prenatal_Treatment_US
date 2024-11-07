@@ -1,0 +1,69 @@
+* Generate delivery year variable from delivery_date
+gen delivery_year = year(service_date)
+list delivery_year
+
+* Generate age_at_delivery by subtracting birth_year from delivery_year
+gen age_at_delivery = delivery_year - birth_year
+
+* Create age group variable based on age_at_delivery
+gen age_group = .
+replace age_group = 1 if inrange(age_at_delivery, 15, 19)
+replace age_group = 2 if inrange(age_at_delivery, 20, 29)
+replace age_group = 3 if inrange(age_at_delivery, 30, 39)
+replace age_group = 4 if inrange(age_at_delivery, 40, 55)
+
+* Label the age groups 
+label define agegrp 1 "15-19" 2 "20-29" 3 "30-39" 4 "40-55"
+label values age_group agegrp
+
+
+* Generate variable HBsAg_testing
+gen HBsAg_test = 0
+replace HBsAg_test = 1 if inlist(PCT, "80055", "87340", "87341", "80074", "80081")
+
+* Set HBsAg_test to missing if PCT is missing
+replace HBsAg_test = . if missing(PCT)
+
+* Generate HBsAg_scr during pregnancy
+gen HBsAg_scr_preg = 0
+
+* Set HBsAg_testing_during_pregnancy to 1 if HBsAg_scr == 1 and service_date is within 42 weeks (294 days) before delivery_date
+replaceHBsAg_scr_preg = 1 if HBsAg_scr == 1 & service_date >= delivery_date - 294 & service_date <= delivery_date
+
+* Set HBsAg_testing_during_pregnancy to missing if either HBsAg_scr or delivery_date is missing
+replace HBsAg_scr_preg = . if missing(HBsAg_scr) | missing(service_date) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2015
+gen HBsAg_scr_preg_2015 = 0
+replace HBsAg_scr_preg_2015= 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2015
+
+* Set HBsAg_scr_preg_2016 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2015 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+gen HBsAg_scr_preg_2016 = 0
+replace HBsAg_scr_preg_20165= 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2016
+
+* Set HBsAg_scr_preg_2016 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2016 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2017
+gen HBsAg_scr_preg_2017 = 0
+replace HBsAg_scr_preg_2017 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2017
+
+* Set HBsAg_scr_preg_2017 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2017 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2018
+gen HBsAg_scr_preg_2018= 0
+replace HBsAg_scr_preg_2018 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2018
+
+* Set HBsAg_scr_preg_2018 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2018 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2019
+gen HBsAg_scr_preg_2019= 0
+replace HBsAg_scr_preg_2019 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2019
+
+* Set HBsAg_scr_preg_2019 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2019 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+

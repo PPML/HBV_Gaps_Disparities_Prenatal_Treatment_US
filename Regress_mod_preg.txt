@@ -1,0 +1,28 @@
+* Identify individuals with multiple pregnancies
+xtset person_id
+
+* Univariable GEE logistic regressions for directed care
+foreach var in Age_group race education number_of_children {
+
+    display "Univariable regression for `var'"
+    xtgee directed_care `var', family(binomial) link(logit) corr(exch) robust eform
+}
+
+* Multivariable GEE logistic regression  for directed care
+
+display "Multivariable regression with all variables"
+xtgee directed_care Age_group race education number_of_children, family(binomial) link(logit) corr(exch) robust eform
+
+
+* Univariable GEE logistic regressions for antiviral treatment
+foreach var in Age_group race education number_of_children {
+ 
+    display "Univariable regression for `var'"
+     xtgee antiviral_12m `var', family(binomial) link(logit) corr(exch) robust eform
+}
+
+*Data transpose and data cut were implemented on Redivis
+*Data source tables from Optum includes Member table, Medical Claim table, Pharmacy Claim table, and Eligibility table. 
+*Exported  Output data table includes interested variable including demographics (DOB, Age, Education, Race, number of children), Insurance type, Enrollment (Enrollment each year, Continuous_Enrollment_6mbf, Continuous Enrollement_12mafter, Continuous Enrollement_24mafter), ICD_Code, CPT_Code, Dates of Enrollment, Date of procedure, Date of delivery, date of antiviral treatment, Date of first antiviral, antiviral_any, antiviral_12m, antiviral_24mo. 
+
+

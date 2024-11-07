@@ -1,0 +1,42 @@
+* Count the number of people with delivery year 2015
+count if delivery_year == 2015
+display "Number of people with delivery year in 2015: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2015 == 1
+count if HBsAg_scr_preg_2015 == 1
+display "Number of people with HBsAg_scr_preg_2015 == 1: " r(N)
+
+* Count the number of people with delivery year 2016
+count if delivery_year == 2016
+display "Number of people with delivery year in 2016: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2016 == 1
+count if HBsAg_scr_preg_2016 == 1
+display "Number of people with HBsAg_scr_preg_2016 == 1: " r(N)
+
+* Count the number of people with delivery year 2017
+count if delivery_year == 2017
+display "Number of people with delivery year in 2017: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2017 == 1
+count if HBsAg_scr_preg_2017 == 1
+display "Number of people with HBsAg_scr_preg_2017 == 1: " r(N)
+
+
+* Count the number of people with delivery year 2018
+count if delivery_year == 2018
+display "Number of people with delivery year in 2015: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2018 == 1
+count if HBsAg_scr_preg_2018 == 1
+display "Number of people with HBsAg_scr_preg_2018 == 1: " r(N)
+
+* Count the number of people with delivery year 2019
+count if delivery_year == 2019
+display "Number of people with delivery year in 2019: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2019 == 1
+count if HBsAg_scr_preg_2019 == 1
+display "Number of people with HBsAg_scr_preg_2019 == 1: " r(N)
+
+

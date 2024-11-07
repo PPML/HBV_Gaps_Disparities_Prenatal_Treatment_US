@@ -1,0 +1,18 @@
+* Generate variables for ICD-based conditions
+
+gen HCV = 0
+replace HCV = 1 if inlist(ICD_Code, "B18.2", "B19.20", "Z22.52", "070.44", "070.54")
+replace HCV = . if missing(ICD_Code)
+
+gen HIV = 0
+replace HIV = 1 if inlist(ICD_Code, "B20", "B97.35", "Z21", "042", "079.53", "795.71", "V08")
+replace HIV = . if missing(ICD_Code)
+
+
+* Generate indicators for HIV and HCV diagnoses before delivery date
+gen HIV_before_delivery = (HIV == 1 & diagnosis_date < delivery_date)
+gen HCV_before_delivery = (HCV == 1 & diagnosis_date < delivery_date)
+
+* Exclude pregnancies with HIV or HCV diagnosis before the delivery date
+drop if HIV_before_delivery == 1 | HCV_before_delivery == 1
+

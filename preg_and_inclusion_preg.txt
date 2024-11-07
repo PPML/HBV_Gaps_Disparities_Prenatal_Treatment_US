@@ -1,0 +1,27 @@
+* Load the dataset
+use HBVPregScr.dta, clear
+
+* Generate variable "Preg" 
+gen Preg = 0
+replace Preg = 1 if inlist(PCT, "Z370", "Z375", "Z3750", "Z3751", "Z3752", "Z3753", "Z3754", ///
+    "Z372", "Z3759", "Z376", "Z3760", "Z3761", "Z3762", "Z3763", "Z3764", "Z3769", "Z379", ///
+    "Z373", "V270", "V275", "V272", "V276", "V273", "650", "V279", "O80", "O82", "59614", ///
+    "59618", "59620", "59622", "59400", "59409", "59410", "59510", "59514", "59515", ///
+    "59610", "59612")
+
+* Set Preg to missing if PCT is missing
+replace Preg = . if missing(PCT)
+
+
+* Define inclusion date range for delivery
+gen eligible_delivery_date = (service_date >= mdy(1, 1, 2015) & service_date <= mdy(12, 31, 2019))
+
+* Define continuous enrollment of at least 42 weeks (294 days) before delivery date
+gen continuous_enrollment_42wks = (enrollment_start <= service_date - 294)
+
+* Apply inclusion criteria
+gen included = (eligible_delivery_date == 1 & continuous_enrollment_42wks == 1)
+
+* Keep only included patients
+keep if included == 1
+

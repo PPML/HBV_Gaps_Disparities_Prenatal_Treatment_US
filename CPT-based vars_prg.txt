@@ -1,0 +1,35 @@
+* Generate binary CPT codes-based variables 
+gen ALT = 0
+replace ALT = 1 if inlist(CPT_Code, "80076", "84460", "80053")
+replace ALT = . if missing(CPT_Code)
+gen ALT_42w_12m = 0
+replace ALT_42w_12m = 1 if ALT_date >= delivery_date - 42*7 & ALT_date <= delivery_date + 12*30.44
+
+gen HBV_DNA = 0
+replace HBV_DNA = 1 if inlist(CPT_Code, "87515", "87516", "87517")
+replace HBV_DNA = . if missing(CPT_Code)
+gen HBV_DNA_42w_12m = 0
+replace HBV_DNA_42w_12m = 1 if HBV_DNA_date >= delivery_date - 42*7 & HBV_DNA_date <= delivery_date + 12*30.44
+
+gen HBeAg = 0
+replace HBeAg = 1 if CPT_Code == "87350"
+replace HBeAg = . if missing(CPT_Code)
+gen HBeAg = 0
+replace HBeAg_42w_12m = 1 if HBeAg_date >= delivery_date - 42*7 & HBeAg_date <= delivery_date + 12*30.44
+
+gen directed_care = 0
+replace directed_care = 1 if ALT == 1 & (HBV_DNA == 1 | HBeAg == 1)
+replace directed_care = . if missing(ALT) | (missing(HBV_DNA) & missing(HBeAg))
+
+* Summarize age
+tabulate age_group, missing
+display "Age group 15-19: " r(N)[1] " (" 100 * r(N)[1] / `total' "%)"
+display "Age group 20-29: " r(N)[2] " (" 100 * r(N)[2] / `total' "%)"
+display "Age group 30-39: " r(N)[3] " (" 100 * r(N)[3] / `total' "%)"
+display "Age group 40-55: " r(N)[4] " (" 100 * r(N)[4] / `total' "%)"
+
+gen CHB = 0
+replace CHB = 1 if inlist(ICD_Code, "B18.1", "B18.0", "B19.10", "Z22.51", "V02.61", "070.32", "070.33", "070.22", "070.2")
+replace CHB = . if missing(ICD_Code)
+
+

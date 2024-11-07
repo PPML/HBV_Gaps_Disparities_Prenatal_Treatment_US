@@ -1,0 +1,68 @@
+* Count the number of patients with delivery date each year and CHB == 1
+count if delivery_year == 2015 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2017& CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and ALT == 1
+count if delivery_year == 2015 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2015, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2016, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2017, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2018, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2019, CHB == 1, and ALT == 1: " r(N)
+count if CHB == 1 & ALT == 1
+display "Number of patients, CHB == 1, and ALT == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and HBV_DNA == 1
+count if delivery_year == 2015 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2015, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2016, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2017, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2018, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2019, CHB == 1, and HBV_DNA == 1: " r(N)
+count if CHB == 1 & HBV_DNA == 1
+display "Number of patients, CHB == 1, and HBV_DNA == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and HBeAg == 1
+count if delivery_year == 2015 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2015, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2016, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2017, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2018, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2019, CHB == 1, and HBeAg == 1: " r(N)
+count if CHB == 1 & HBeAg == 1
+display "Number of patients, CHB == 1, and HBeAg == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and directed_care == 1
+count if delivery_year == 2015 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2015, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2016, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2017, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2018, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2019, CHB == 1, and directed_care == 1: " r(N)
+count if CHB == 1 & directed_care == 1
+display "Number of patients, CHB == 1, and directed_care == 1: " r(N)
+
