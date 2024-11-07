@@ -1,0 +1,464 @@
+*CARE CASCADE STUDY
+
+* Load the dataset
+use HBVCasOpt.dta, clear
+
+* Generate variables for ICD-9/10-based conditions
+gen CHB = 0
+replace CHB = 1 if inlist(ICD_Code, "B18.1", "B18.0", "B19.10", "Z22.51", "V02.61", "070.32", "070.33", "070.22", "070.2")
+replace CHB = . if missing(ICD_Code)
+
+gen HCV = 0
+replace HCV = 1 if inlist(ICD_Code, "B18.2", "B19.20", "Z22.52", "070.44", "070.54")
+replace HCV = . if missing(ICD_Code)
+
+gen HIV = 0
+replace HIV = 1 if inlist(ICD_Code, "B20", "B97.35", "Z21", "042", "079.53", "795.71", "V08")
+replace HIV = . if missing(ICD_Code)
+
+gen HCC = 0
+replace HCC = 1 if inlist(ICD_Code, "C22.0", "C22.7", "C22.8", "155.0")
+replace HCC = . if missing(ICD_Code)
+
+gen cirrhosis = 0
+replace cirrhosis = 1 if inlist(ICD_Code, "K74", "K74.6", "K74.60", "K74.69", "K70.3", "K70.30", "K70.31", "K71.7", "571", "571.2", "571.5")
+replace cirrhosis = . if missing(ICD_Code)
+
+gen liver_transplant = 0
+replace liver_transplant = 1 if inlist(ICD_Code, "Z94.4", "V42.7", "Z48.23", "T86.4", "T86.40", "T86.41", "T86.42", "T86.43", "T86.49", "996.82")
+replace liver_transplant = . if missing(ICD_Code)
+
+* Generate binary variables for CPT codes-based test/scan
+gen ALT = 0
+replace ALT = 1 if inlist(CPT_Code, "80076", "84460", "80053")
+replace ALT = . if missing(CPT_Code)
+
+gen HBV_DNA = 0
+replace HBV_DNA = 1 if inlist(CPT_Code, "87515", "87516", "87517")
+replace HBV_DNA = . if missing(CPT_Code)
+
+gen HBeAg = 0
+replace HBeAg = 1 if CPT_Code == "87350"
+replace HBeAg = . if missing(CPT_Code)
+
+gen Ultrasound = 0
+replace Ultrasound = 1 if inlist(CPT_Code, "76700", "76705")
+replace Ultrasound = . if missing(CPT_Code)
+
+gen CT_scan = 0
+replace CT_scan = 1 if inlist(CPT_Code, "74150", "74160", "74170", "74176", "74177", "74178")
+replace CT_scan = . if missing(CPT_Code)
+
+gen MRI_scan = 0
+replace MRI_scan = 1 if inlist(CPT_Code, "74181", "74183")
+replace MRI_scan = . if missing(CPT_Code)
+
+* Create age variables for each year
+gen Age_2016 = 2016 - birth_year
+gen Age_2017 = 2017 - birth_year
+gen Age_2018 = 2018 - birth_year
+gen Age_2019 = 2019 - birth_year
+
+* Create adult enrollment indicators for each year (age 18+ and enrolled) 
+gen Adult_enrolled2016 = (enrolled_2016 == 1 & Age_2016 >= 18)
+gen Adult_enrolled2017 = (enrolled_2017 == 1 & Age_2017 >= 18)
+gen Adult_enrolled2018 = (enrolled_2018 == 1 & Age_2018 >= 18)
+gen Adult_enrolled2019 = (enrolled_2019 == 1 & Age_2019 >= 18)
+gen Adult_enrolled2016_2019 = (Adult_enrolled2016 == 1 | Adult_enrolled2017 == 1 | Adult_enrolled2018 == 1 | Adult_enrolled2019 == 1)
+drop if Adult_enrolled2016_2019 != 0
+ 
+
+* Define age groups
+gen Age_Group = .
+replace Age_Group = 1 if age >= 18 & age <= 44
+replace Age_Group = 2 if age >= 45 & age <= 64
+replace Age_Group = 3 if age >= 65
+label define agegrp 1 "18-44" 2 "45-64" 3 "65+"
+label values Age_Group agegrp
+
+* Restrict analysis to eligible follow-up patients without HIV, HCV, HCC, or liver transplant
+keep if followup_12mo == 1 & HIV == 0 & HCV == 0 & HCC == 0 & liver_transplant == 0
+
+
+* Filter for eligible diagnosis year, handling missing values in Year_firstdiag
+gen eligible_diagnosis = Year_firstdiag <= 2018 if !missing(Year_firstdiag)
+
+* Flag patients with HBV mono-infection without HCC or liver transplant
+gen mono_infected = 0
+replace mono_infected = 1 if HIV == 0 & HCV == 0 & HCC == 0 & New_diagnosis == 1
+replace mono_infected = . if missing(HIV) | missing(HCV) | missing(HCC) | missing(New_diagnosis)
+
+* Exclude patients diagnosed after Dec 31, 2018
+drop if first_diagnosis_date > mdy(12, 31, 2018)
+
+* Include only patients with new diagnosis (no diagnosis code before Jan 1, 2016)
+keep if first_diagnosis_date >= mdy(1, 1, 2016)
+
+* Determine patients with continuous enrollment for required time frames
+gen continuous_6mo_before = .
+replace continuous_6mo_before = 1 if enrollment_start <= first_diagnosis_date - 180 & !missing(enrollment_start) & !missing(first_diagnosis_date)
+
+gen continuous_12mo_after = .
+replace continuous_12mo_after = 1 if enrollment_end >= first_diagnosis_date + 365 & !missing(enrollment_end) & !missing(first_diagnosis_date)
+
+* Create a 12-month follow-up flag based on continuous enrollment
+gen followup_12mo = continuous_6mo_before & continuous_12mo_after & mono_infected & eligible_diagnosis if !missing(continuous_6mo_before) & !missing(continuous_12mo_after) & !missing(mono_infected) & !missing(eligible_diagnosis)
+
+* Monitoring within 12 months: ALT, HBV_DNA, or HBeAg, handling missing values
+gen monitoring = (ALT == 1 | HBV_DNA == 1 | HBeAg == 1) if !missing(ALT) & !missing(HBV_DNA) & !missing(HBeAg)
+replace monitoring = . if missing(ALT) | missing(HBV_DNA) | missing(HBeAg)
+
+* Create a composite imaging variable to indicate HCC surveillance
+gen imaging_any = max(CT_scan, Ultrasound, MRI_scan)
+
+
+* Calculate treatment rate for patients with cirrhosis
+count if cirrhosis == 1 & antiviral_12mo == 1 // Number with cirrhosis and antiviral claim
+local cirrhosis_antiviral = r(N)
+
+count if cirrhosis == 1 // Total patients with cirrhosis
+local total_cirrhosis = r(N)
+
+display "Percentage of patients with cirrhosis and antiviral claim: " ///
+(100 * `cirrhosis_antiviral' / `total_cirrhosis') "% (" `cirrhosis_antiviral' " out of " `total_cirrhosis' ")"
+
+* Calculate  treatment rate for patients without cirrhosis
+count if cirrhosis == 0 & antiviral_12mo == 1 // Number without cirrhosis and antiviral claim
+local nocirrhosis_antiviral = r(N)
+
+count if cirrhosis == 0 // Total patients without cirrhosis
+local total_nocirrhosis = r(N)
+
+display "Percentage of patients without cirrhosis and antiviral claim: " ///
+(100 * `nocirrhosis_antiviral' / `total_nocirrhosis') "% (" `nocirrhosis_antiviral' " out of " `total_nocirrhosis' ")"
+
+
+*treatment rate within 24 months of first diagnosis
+
+* Calculate treatment rate for patients with cirrhosis
+count if cirrhosis == 1 & antiviral_24mo == 1 // Number with cirrhosis and antiviral claim
+local cirrhosis_antiviral = r(N)
+
+count if cirrhosis == 1 // Total patients with cirrhosis
+local total_cirrhosis = r(N)
+
+display "Percentage of patients with cirrhosis and antiviral claim: " ///
+(100 * `cirrhosis_antiviral' / `total_cirrhosis') "% (" `cirrhosis_antiviral' " out of " `total_cirrhosis' ")"
+
+* Calculate  treatment rate for patients without cirrhosis
+count if cirrhosis == 0 & antiviral_24mo == 1 // Number without cirrhosis and antiviral claim
+local nocirrhosis_antiviral = r(N)
+
+count if cirrhosis == 0 // Total patients without cirrhosis
+local total_nocirrhosis = r(N)
+
+display "Percentage of patients without cirrhosis and antiviral claim: " ///
+(100 * `nocirrhosis_antiviral' / `total_nocirrhosis') "% (" `nocirrhosis_antiviral' " out of " `total_nocirrhosis' ")"
+
+* Univariable logistic regression for each predictor in relation to monitoring
+logistic monitoring age
+logistic monitoring i.Gender
+logistic monitoring i.race_cat
+logistic monitoring i.insurance_cat
+logistic monitoring i.cirrhosis
+
+* Multivariable logistic regression model
+logistic monitoring age i.Gender i.race_cat i.insurance_cat i.cirrhosis
+logistic monitoring age i.Gender i.race_cat i.insurance_cat i.cirrhosis, or
+
+
+*Data transpose and data cut were implemented on Redivis. 
+*Data source tables from Optum includes Member table, Medical Claim table, Pharmacy Claim table, and Eligibility table. 
+*Exported  Output data table, the HBVCasOpt dataframe, includes interested variable including demographics (DOB, Age, Gender, race), Insurance type, Enrollment (Enrollment each year, Continuous_Enrollment_6mbf, Continuous Enrollement_12mafter, Continuous Enrollement_24mafter), ICD_Code, CPT_Code, Dates of Enrollment, Date of diagnosis codes, Date of first diagnosis, Dates of procedure, Date of first procedure, Dates of antiviral treatment, Date of first antiviral, antiviral_any, antiviral_12mo.antiviral_24mo. 
+
+****************************************************************************************************************
+
+*Gaps in Prenatal Hepatitis B Screening and Management of HBsAg Positive Pregnant Persons in the U.S., 2015–2020
+
+* Load the dataset
+use HBVPregScr.dta, clear
+
+* Generate variable "Preg" 
+gen Preg = 0
+replace Preg = 1 if inlist(PCT, "Z370", "Z375", "Z3750", "Z3751", "Z3752", "Z3753", "Z3754", ///
+    "Z372", "Z3759", "Z376", "Z3760", "Z3761", "Z3762", "Z3763", "Z3764", "Z3769", "Z379", ///
+    "Z373", "V270", "V275", "V272", "V276", "V273", "650", "V279", "O80", "O82", "59614", ///
+    "59618", "59620", "59622", "59400", "59409", "59410", "59510", "59514", "59515", ///
+    "59610", "59612")
+
+* Set Preg to missing if PCT is missing
+replace Preg = . if missing(PCT)
+
+
+* Define inclusion date range for delivery
+gen eligible_delivery_date = (service_date >= mdy(1, 1, 2015) & service_date <= mdy(12, 31, 2019))
+
+* Define continuous enrollment of at least 42 weeks (294 days) before delivery date
+gen continuous_enrollment_42wks = (enrollment_start <= service_date - 294)
+
+* Apply inclusion criteria
+gen included = (eligible_delivery_date == 1 & continuous_enrollment_42wks == 1)
+
+* Keep only included patients
+keep if included == 1
+
+* Generate delivery year variable from delivery_date
+gen delivery_year = year(service_date)
+list delivery_year
+
+* Generate age_at_delivery by subtracting birth_year from delivery_year
+gen age_at_delivery = delivery_year - birth_year
+
+* Create age group variable based on age_at_delivery
+gen age_group = .
+replace age_group = 1 if inrange(age_at_delivery, 15, 19)
+replace age_group = 2 if inrange(age_at_delivery, 20, 29)
+replace age_group = 3 if inrange(age_at_delivery, 30, 39)
+replace age_group = 4 if inrange(age_at_delivery, 40, 55)
+
+* Label the age groups 
+label define agegrp 1 "15-19" 2 "20-29" 3 "30-39" 4 "40-55"
+label values age_group agegrp
+
+
+* Generate variable HBsAg_testing
+gen HBsAg_test = 0
+replace HBsAg_test = 1 if inlist(PCT, "80055", "87340", "87341", "80074", "80081")
+
+* Set HBsAg_test to missing if PCT is missing
+replace HBsAg_test = . if missing(PCT)
+
+* Generate HBsAg_scr during pregnancy
+gen HBsAg_scr_preg = 0
+
+* Set HBsAg_testing_during_pregnancy to 1 if HBsAg_scr == 1 and service_date is within 42 weeks (294 days) before delivery_date
+replaceHBsAg_scr_preg = 1 if HBsAg_scr == 1 & service_date >= delivery_date - 294 & service_date <= delivery_date
+
+* Set HBsAg_testing_during_pregnancy to missing if either HBsAg_scr or delivery_date is missing
+replace HBsAg_scr_preg = . if missing(HBsAg_scr) | missing(service_date) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2015
+gen HBsAg_scr_preg_2015 = 0
+replace HBsAg_scr_preg_2015= 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2015
+
+* Set HBsAg_scr_preg_2016 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2015 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+gen HBsAg_scr_preg_2016 = 0
+replace HBsAg_scr_preg_20165= 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2016
+
+* Set HBsAg_scr_preg_2016 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2016 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2017
+gen HBsAg_scr_preg_2017 = 0
+replace HBsAg_scr_preg_2017 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2017
+
+* Set HBsAg_scr_preg_2017 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2017 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2018
+gen HBsAg_scr_preg_2018= 0
+replace HBsAg_scr_preg_2018 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2018
+
+* Set HBsAg_scr_preg_2018 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2018 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Generate HBsAg_scr_preg_2019
+gen HBsAg_scr_preg_2019= 0
+replace HBsAg_scr_preg_2019 = 1 if HBsAg_scr_preg == 1 & year(delivery_date) == 2019
+
+* Set HBsAg_scr_preg_2019 to missing if HBsAg_scr_preg or delivery_date is missing
+replace HBsAg_scr_preg_2019 = . if missing(HBsAg_scr_preg) | missing(delivery_date)
+
+* Count the number of people with delivery year 2015
+count if delivery_year == 2015
+display "Number of people with delivery year in 2015: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2015 == 1
+count if HBsAg_scr_preg_2015 == 1
+display "Number of people with HBsAg_scr_preg_2015 == 1: " r(N)
+
+* Count the number of people with delivery year 2016
+count if delivery_year == 2016
+display "Number of people with delivery year in 2016: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2016 == 1
+count if HBsAg_scr_preg_2016 == 1
+display "Number of people with HBsAg_scr_preg_2016 == 1: " r(N)
+
+* Count the number of people with delivery year 2017
+count if delivery_year == 2017
+display "Number of people with delivery year in 2017: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2017 == 1
+count if HBsAg_scr_preg_2017 == 1
+display "Number of people with HBsAg_scr_preg_2017 == 1: " r(N)
+
+
+* Count the number of people with delivery year 2018
+count if delivery_year == 2018
+display "Number of people with delivery year in 2015: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2018 == 1
+count if HBsAg_scr_preg_2018 == 1
+display "Number of people with HBsAg_scr_preg_2018 == 1: " r(N)
+
+* Count the number of people with delivery year 2019
+count if delivery_year == 2019
+display "Number of people with delivery year in 2019: " r(N)
+
+* Count the number of people with HBsAg_scr_preg_2019 == 1
+count if HBsAg_scr_preg_2019 == 1
+display "Number of people with HBsAg_scr_preg_2019 == 1: " r(N)
+
+
+* Generate variables for ICD-based conditions
+
+gen HCV = 0
+replace HCV = 1 if inlist(ICD_Code, "B18.2", "B19.20", "Z22.52", "070.44", "070.54")
+replace HCV = . if missing(ICD_Code)
+
+gen HIV = 0
+replace HIV = 1 if inlist(ICD_Code, "B20", "B97.35", "Z21", "042", "079.53", "795.71", "V08")
+replace HIV = . if missing(ICD_Code)
+
+
+* Generate indicators for HIV and HCV diagnoses before delivery date
+gen HIV_before_delivery = (HIV == 1 & diagnosis_date < delivery_date)
+gen HCV_before_delivery = (HCV == 1 & diagnosis_date < delivery_date)
+
+* Exclude pregnancies with HIV or HCV diagnosis before the delivery date
+drop if HIV_before_delivery == 1 | HCV_before_delivery == 1
+
+* Generate binary CPT codes-based variables 
+gen ALT = 0
+replace ALT = 1 if inlist(CPT_Code, "80076", "84460", "80053")
+replace ALT = . if missing(CPT_Code)
+gen ALT_42w_12m = 0
+replace ALT_42w_12m = 1 if ALT_date >= delivery_date - 42*7 & ALT_date <= delivery_date + 12*30.44
+
+gen HBV_DNA = 0
+replace HBV_DNA = 1 if inlist(CPT_Code, "87515", "87516", "87517")
+replace HBV_DNA = . if missing(CPT_Code)
+gen HBV_DNA_42w_12m = 0
+replace HBV_DNA_42w_12m = 1 if HBV_DNA_date >= delivery_date - 42*7 & HBV_DNA_date <= delivery_date + 12*30.44
+
+gen HBeAg = 0
+replace HBeAg = 1 if CPT_Code == "87350"
+replace HBeAg = . if missing(CPT_Code)
+gen HBeAg = 0
+replace HBeAg_42w_12m = 1 if HBeAg_date >= delivery_date - 42*7 & HBeAg_date <= delivery_date + 12*30.44
+
+gen directed_care = 0
+replace directed_care = 1 if ALT == 1 & (HBV_DNA == 1 | HBeAg == 1)
+replace directed_care = . if missing(ALT) | (missing(HBV_DNA) & missing(HBeAg))
+
+* Summarize age
+tabulate age_group, missing
+display "Age group 15-19: " r(N)[1] " (" 100 * r(N)[1] / `total' "%)"
+display "Age group 20-29: " r(N)[2] " (" 100 * r(N)[2] / `total' "%)"
+display "Age group 30-39: " r(N)[3] " (" 100 * r(N)[3] / `total' "%)"
+display "Age group 40-55: " r(N)[4] " (" 100 * r(N)[4] / `total' "%)"
+
+gen CHB = 0
+replace CHB = 1 if inlist(ICD_Code, "B18.1", "B18.0", "B19.10", "Z22.51", "V02.61", "070.32", "070.33", "070.22", "070.2")
+replace CHB = . if missing(ICD_Code)
+
+
+* Count the number of patients with delivery date each year and CHB == 1
+count if delivery_year == 2015 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2017& CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1
+display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and ALT == 1
+count if delivery_year == 2015 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2015, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2016, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2017, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2018, CHB == 1, and ALT == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & ALT == 1
+display "Number of patients with delivery year 2019, CHB == 1, and ALT == 1: " r(N)
+count if CHB == 1 & ALT == 1
+display "Number of patients, CHB == 1, and ALT == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and HBV_DNA == 1
+count if delivery_year == 2015 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2015, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2016, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2017, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2018, CHB == 1, and HBV_DNA == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & HBV_DNA == 1
+display "Number of patients with delivery year 2019, CHB == 1, and HBV_DNA == 1: " r(N)
+count if CHB == 1 & HBV_DNA == 1
+display "Number of patients, CHB == 1, and HBV_DNA == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and HBeAg == 1
+count if delivery_year == 2015 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2015, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2016, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2017, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2018, CHB == 1, and HBeAg == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & HBeAg == 1
+display "Number of patients with delivery year 2019, CHB == 1, and HBeAg == 1: " r(N)
+count if CHB == 1 & HBeAg == 1
+display "Number of patients, CHB == 1, and HBeAg == 1: " r(N)
+
+* Count the number of patients with delivery each year, CHB == 1, and directed_care == 1
+count if delivery_year == 2015 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2015, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2016 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2016, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2017 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2017, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2018 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2018, CHB == 1, and directed_care == 1: " r(N)
+count if delivery_year == 2019 & CHB == 1 & directed_care == 1
+display "Number of patients with delivery year 2019, CHB == 1, and directed_care == 1: " r(N)
+count if CHB == 1 & directed_care == 1
+display "Number of patients, CHB == 1, and directed_care == 1: " r(N)
+
+* Identify individuals with multiple pregnancies
+xtset person_id
+
+* Univariable GEE logistic regressions for directed care
+foreach var in Age_group race education number_of_children {
+
+    display "Univariable regression for `var'"
+    xtgee directed_care `var', family(binomial) link(logit) corr(exch) robust eform
+}
+
+* Multivariable GEE logistic regression  for directed care
+
+display "Multivariable regression with all variables"
+xtgee directed_care Age_group race education number_of_children, family(binomial) link(logit) corr(exch) robust eform
+
+
+* Univariable GEE logistic regressions for antiviral treatment
+foreach var in Age_group race education number_of_children {
+ 
+    display "Univariable regression for `var'"
+     xtgee antiviral_12m `var', family(binomial) link(logit) corr(exch) robust eform
+}
+
+*Data transpose and data cut were implemented on Redivis
+*Data source tables from Optum includes Member table, Medical Claim table, Pharmacy Claim table, and Eligibility table. 
+*Exported  Output data table includes interested variable including demographics (DOB, Age, Education, Race, number of children), Insurance type, Enrollment (Enrollment each year, Continuous_Enrollment_6mbf, Continuous Enrollement_12mafter, Continuous Enrollement_24mafter), ICD_Code, CPT_Code, Dates of Enrollment, Date of procedure, Date of delivery, date of antiviral treatment, Date of first antiviral, antiviral_any, antiviral_12m, antiviral_24mo. 
+
+
