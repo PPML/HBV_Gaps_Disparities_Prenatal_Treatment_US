@@ -1,3 +1,6 @@
+* Load the dataset
+use HBV_Preg2.dta, clear
+
 * Count the number of patients with delivery date each year and CHB == 1
 count if delivery_year == 2015 & CHB == 1
 display "Number of patients with delivery year 2015 and CHB == 1: " r(N)
