@@ -1,3 +1,5 @@
+* Load the dataset
+use CasOpt_b2.dta, clear
 * Generate binary CPT codes-based variables 
 gen ALT = 0
 replace ALT = 1 if inlist(CPT_Code, "80076", "84460", "80053")
