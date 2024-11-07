@@ -1,0 +1,51 @@
+* Monitoring within 12 months: ALT, HBV_DNA, or HBeAg, handling missing values
+gen monitoring = (ALT == 1 | HBV_DNA == 1 | HBeAg == 1) if !missing(ALT) & !missing(HBV_DNA) & !missing(HBeAg)
+replace monitoring = . if missing(ALT) | missing(HBV_DNA) | missing(HBeAg)
+
+* Create a composite imaging variable to indicate HCC surveillance
+gen imaging_any = max(CT_scan, Ultrasound, MRI_scan)
+
+
+* Calculate treatment rate for patients with cirrhosis
+count if cirrhosis == 1 & antiviral_12mo == 1 // Number with cirrhosis and antiviral claim
+local cirrhosis_antiviral = r(N)
+
+count if cirrhosis == 1 // Total patients with cirrhosis
+local total_cirrhosis = r(N)
+
+display "Percentage of patients with cirrhosis and antiviral claim: " ///
+(100 * `cirrhosis_antiviral' / `total_cirrhosis') "% (" `cirrhosis_antiviral' " out of " `total_cirrhosis' ")"
+
+* Calculate  treatment rate for patients without cirrhosis
+count if cirrhosis == 0 & antiviral_12mo == 1 // Number without cirrhosis and antiviral claim
+local nocirrhosis_antiviral = r(N)
+
+count if cirrhosis == 0 // Total patients without cirrhosis
+local total_nocirrhosis = r(N)
+
+display "Percentage of patients without cirrhosis and antiviral claim: " ///
+(100 * `nocirrhosis_antiviral' / `total_nocirrhosis') "% (" `nocirrhosis_antiviral' " out of " `total_nocirrhosis' ")"
+
+
+*treatment rate within 24 months of first diagnosis
+
+* Calculate treatment rate for patients with cirrhosis
+count if cirrhosis == 1 & antiviral_24mo == 1 // Number with cirrhosis and antiviral claim
+local cirrhosis_antiviral = r(N)
+
+count if cirrhosis == 1 // Total patients with cirrhosis
+local total_cirrhosis = r(N)
+
+display "Percentage of patients with cirrhosis and antiviral claim: " ///
+(100 * `cirrhosis_antiviral' / `total_cirrhosis') "% (" `cirrhosis_antiviral' " out of " `total_cirrhosis' ")"
+
+* Calculate  treatment rate for patients without cirrhosis
+count if cirrhosis == 0 & antiviral_24mo == 1 // Number without cirrhosis and antiviral claim
+local nocirrhosis_antiviral = r(N)
+
+count if cirrhosis == 0 // Total patients without cirrhosis
+local total_nocirrhosis = r(N)
+
+display "Percentage of patients without cirrhosis and antiviral claim: " ///
+(100 * `nocirrhosis_antiviral' / `total_nocirrhosis') "% (" `nocirrhosis_antiviral' " out of " `total_nocirrhosis' ")"
+

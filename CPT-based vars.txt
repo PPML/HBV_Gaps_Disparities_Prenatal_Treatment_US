@@ -1,0 +1,24 @@
+* Generate binary variables for CPT codes-based test/scan
+gen ALT = 0
+replace ALT = 1 if inlist(CPT_Code, "80076", "84460", "80053")
+replace ALT = . if missing(CPT_Code)
+
+gen HBV_DNA = 0
+replace HBV_DNA = 1 if inlist(CPT_Code, "87515", "87516", "87517")
+replace HBV_DNA = . if missing(CPT_Code)
+
+gen HBeAg = 0
+replace HBeAg = 1 if CPT_Code == "87350"
+replace HBeAg = . if missing(CPT_Code)
+
+gen Ultrasound = 0
+replace Ultrasound = 1 if inlist(CPT_Code, "76700", "76705")
+replace Ultrasound = . if missing(CPT_Code)
+
+gen CT_scan = 0
+replace CT_scan = 1 if inlist(CPT_Code, "74150", "74160", "74170", "74176", "74177", "74178")
+replace CT_scan = . if missing(CPT_Code)
+
+gen MRI_scan = 0
+replace MRI_scan = 1 if inlist(CPT_Code, "74181", "74183")
+replace MRI_scan = . if missing(CPT_Code)

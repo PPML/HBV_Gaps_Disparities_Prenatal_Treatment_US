@@ -1,0 +1,51 @@
+* Create age variables for each year
+gen Age_2016 = 2016 - birth_year
+gen Age_2017 = 2017 - birth_year
+gen Age_2018 = 2018 - birth_year
+gen Age_2019 = 2019 - birth_year
+
+* Create adult enrollment indicators for each year (age 18+ and enrolled) 
+gen Adult_enrolled2016 = (enrolled_2016 == 1 & Age_2016 >= 18)
+gen Adult_enrolled2017 = (enrolled_2017 == 1 & Age_2017 >= 18)
+gen Adult_enrolled2018 = (enrolled_2018 == 1 & Age_2018 >= 18)
+gen Adult_enrolled2019 = (enrolled_2019 == 1 & Age_2019 >= 18)
+gen Adult_enrolled2016_2019 = (Adult_enrolled2016 == 1 | Adult_enrolled2017 == 1 | Adult_enrolled2018 == 1 | Adult_enrolled2019 == 1)
+drop if Adult_enrolled2016_2019 != 0
+ 
+
+* Define age groups
+gen Age_Group = .
+replace Age_Group = 1 if age >= 18 & age <= 44
+replace Age_Group = 2 if age >= 45 & age <= 64
+replace Age_Group = 3 if age >= 65
+label define agegrp 1 "18-44" 2 "45-64" 3 "65+"
+label values Age_Group agegrp
+
+* Restrict analysis to eligible follow-up patients without HIV, HCV, HCC, or liver transplant
+keep if followup_12mo == 1 & HIV == 0 & HCV == 0 & HCC == 0 & liver_transplant == 0
+
+
+* Filter for eligible diagnosis year, handling missing values in Year_firstdiag
+gen eligible_diagnosis = Year_firstdiag <= 2018 if !missing(Year_firstdiag)
+
+* Flag patients with HBV mono-infection without HCC or liver transplant
+gen mono_infected = 0
+replace mono_infected = 1 if HIV == 0 & HCV == 0 & HCC == 0 & New_diagnosis == 1
+replace mono_infected = . if missing(HIV) | missing(HCV) | missing(HCC) | missing(New_diagnosis)
+
+* Exclude patients diagnosed after Dec 31, 2018
+drop if first_diagnosis_date > mdy(12, 31, 2018)
+
+* Include only patients with new diagnosis (no diagnosis code before Jan 1, 2016)
+keep if first_diagnosis_date >= mdy(1, 1, 2016)
+
+* Determine patients with continuous enrollment for required time frames
+gen continuous_6mo_before = .
+replace continuous_6mo_before = 1 if enrollment_start <= first_diagnosis_date - 180 & !missing(enrollment_start) & !missing(first_diagnosis_date)
+
+gen continuous_12mo_after = .
+replace continuous_12mo_after = 1 if enrollment_end >= first_diagnosis_date + 365 & !missing(enrollment_end) & !missing(first_diagnosis_date)
+
+* Create a 12-month follow-up flag based on continuous enrollment
+gen followup_12mo = continuous_6mo_before & continuous_12mo_after & mono_infected & eligible_diagnosis if !missing(continuous_6mo_before) & !missing(continuous_12mo_after) & !missing(mono_infected) & !missing(eligible_diagnosis)
+

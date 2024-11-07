@@ -1,0 +1,27 @@
+* Load the dataset
+use HBVCasOpt.dta, clear
+
+* Generate variables for ICD-9/10-based conditions
+gen CHB = 0
+replace CHB = 1 if inlist(ICD_Code, "B18.1", "B18.0", "B19.10", "Z22.51", "V02.61", "070.32", "070.33", "070.22", "070.2")
+replace CHB = . if missing(ICD_Code)
+
+gen HCV = 0
+replace HCV = 1 if inlist(ICD_Code, "B18.2", "B19.20", "Z22.52", "070.44", "070.54")
+replace HCV = . if missing(ICD_Code)
+
+gen HIV = 0
+replace HIV = 1 if inlist(ICD_Code, "B20", "B97.35", "Z21", "042", "079.53", "795.71", "V08")
+replace HIV = . if missing(ICD_Code)
+
+gen HCC = 0
+replace HCC = 1 if inlist(ICD_Code, "C22.0", "C22.7", "C22.8", "155.0")
+replace HCC = . if missing(ICD_Code)
+
+gen cirrhosis = 0
+replace cirrhosis = 1 if inlist(ICD_Code, "K74", "K74.6", "K74.60", "K74.69", "K70.3", "K70.30", "K70.31", "K71.7", "571", "571.2", "571.5")
+replace cirrhosis = . if missing(ICD_Code)
+
+gen liver_transplant = 0
+replace liver_transplant = 1 if inlist(ICD_Code, "Z94.4", "V42.7", "Z48.23", "T86.4", "T86.40", "T86.41", "T86.42", "T86.43", "T86.49", "996.82")
+replace liver_transplant = . if missing(ICD_Code)

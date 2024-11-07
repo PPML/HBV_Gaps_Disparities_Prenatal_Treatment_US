@@ -1,0 +1,11 @@
+* Univariable logistic regression for each predictor in relation to monitoring
+logistic monitoring age
+logistic monitoring i.Gender
+logistic monitoring i.race_cat
+logistic monitoring i.insurance_cat
+logistic monitoring i.cirrhosis
+
+* Multivariable logistic regression model
+logistic monitoring age i.Gender i.race_cat i.insurance_cat i.cirrhosis
+logistic monitoring age i.Gender i.race_cat i.insurance_cat i.cirrhosis, or
+
