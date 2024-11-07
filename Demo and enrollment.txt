@@ -1,3 +1,6 @@
+* Load the dataset
+use CasOpt_b23.dta, clear
+
 * Create age variables for each year
 gen Age_2016 = 2016 - birth_year
 gen Age_2017 = 2017 - birth_year
